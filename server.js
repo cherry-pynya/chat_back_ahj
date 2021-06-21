@@ -1,38 +1,27 @@
 const http = require("http");
 const Koa = require("koa");
-const Router = require("@koa/router");
-const koaBody = require("koa-body");
-const cors = require("@koa/cors");
-const Tickets = require("./tickets");
+const WS = require('ws');
 
 const app = new Koa();
-const tickets = new Tickets([]);
-tickets.createTicket({
-  header: "Say Hello!",
-  text: "to my little friend",
-});
-
-app.use(
-  cors({
-    origin: "*",
-    credentials: true,
-    "Access-Control-Allow-Origin": true,
-    allowMethods: ["GET", "POST", "PUT", "DELETE"],
-  })
-);
-
-app.use(koaBody({ json: true, text: true, urlencoded: true }));
-
-const router = new Router();
-
-router.get("/tickets", async (ctx) => {
-  ctx.response.status = 204;
-});
-
-
-
-app.use(router.routes()).use(router.allowedMethods());
 
 const port = process.env.PORT || 7777;
 const server = http.createServer(app.callback());
+const wsServer = new WS.Server({server});
+
+wsServer.on('connection', (ws, req) => {
+  const errCallback = (err) => {
+    ws.send('you connected')
+    if (err) {
+      console.log(err);
+    }
+  }
+
+  ws.on('message', msg => {
+    const obj = JSON.parse(msg);
+    console.log(obj);
+    ws.send('ты пидор', errCallback);
+    });
+  ws.send('welcome', errCallback);
+});
+
 server.listen(port, () => console.log("server started"));
