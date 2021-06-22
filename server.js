@@ -7,34 +7,25 @@ const app = new Koa();
 const port = process.env.PORT || 7777;
 const server = http.createServer(app.callback());
 const wsServer = new WS.Server({server});
-const users = []
-const messages = [{
-  type: 'message',
-  text: '2',
-  messageId: 'bdc51352-5d3f-4c3b-9942-ff4e81e400fb',
-  time: '06/21/2021 11:35 PM',
-  userId: '2bf373a0-a0e1-4221-8574-a83225d65421',
-  messager: 'Никита Черепня'
-}]
+const users = [];
+const messages = [];
 
 wsServer.on('connection', (ws, req) => {
-  const errCallback = (err) => {
-    ws.send('you connected')
-    if (err) {
-      console.log(err);
-    }
-  }
-
   ws.on('message', msg => {
     const obj = JSON.parse(msg);
-    console.log(obj);
     switch(obj.type) {
       case 'userName':
+        for (let i = 0; i < users.length; i += 1) {
+          if (obj.name === users[i].name) {
+            ws.close(1000, 'Это логин занят!')
+            return;
+          }
+        }
         users.push(obj);
         Array.from(wsServer.clients)
           .filter(el => el.readyState === WS.OPEN)
           .forEach(el => {
-            ws.send(JSON.stringify({
+            el.send(JSON.stringify({
               type: 'general',
               users: users,
               messages: messages,
@@ -46,7 +37,7 @@ wsServer.on('connection', (ws, req) => {
         Array.from(wsServer.clients)
           .filter(el => el.readyState === WS.OPEN)
           .forEach(el => {
-            ws.send(JSON.stringify(obj))
+            el.send(JSON.stringify(obj))
           });
         return;
     }
@@ -55,4 +46,4 @@ wsServer.on('connection', (ws, req) => {
   //ws.send('welcome', errCallback);
 });
 
-server.listen(port, () => console.log("server started"));
+server.listen(port, () => console.log("server started"))
